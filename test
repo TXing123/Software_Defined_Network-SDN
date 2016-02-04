@@ -1,4 +1,4 @@
 javac Switch.java
 jar cvfm Switch.jar mainclass.txt Switch.class NeighborInfo.class packet_handler.class Periodic_timer_task.class
 javac controller.java
-jar cvfm controller.jar manifest.txt controller.class packet_handler.class SwitchInfo.class Host_timer_task.class
+jar cvfm controller.jar manifest.txt controller.class packet_handler.class SwitchInfo.class Host_timer_task.class Widest_Shortest_Path.class

@@ -1,11 +1,149 @@
 import java.io.*;
 import java.net.*;
 import java.lang.Thread;
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.ArrayList;
+import java.util.*;
+import java.lang.Math;
+ 
+class Widest_Shortest_Path implements Runnable {
+    private int          distances[];
+    private int          width[];
+    private Set<Integer> settled;
+    private Set<Integer> unsettled;
+    private int          number_of_nodes;
+    private int          adjacencyMatrix[][];
+    private int          adjacencyMatrix2[][];
+    private int          prev[];
+    private int          source;
+
+    public Widest_Shortest_Path (int adjacency_matrix[][], int adjacency_matrix2[][], int number_of_nodes, int source ,HashSet<Integer> dead_nodes){
+      this.number_of_nodes= number_of_nodes;
+      distances = new int[number_of_nodes + 1];
+      width = new int[number_of_nodes + 1];
+      prev = new int[number_of_nodes + 1];
+      settled = new HashSet<Integer>();
+      unsettled = new HashSet<Integer>();
+      this.source=source;
+      adjacencyMatrix = new int[number_of_nodes + 1][number_of_nodes + 1];
+      adjacencyMatrix2 = new int[number_of_nodes + 1][number_of_nodes + 1];
+      for (int i = 1; i <= number_of_nodes; i++) 
+        for (int j = 1; j <= number_of_nodes; j++) {
+          adjacencyMatrix[i][j] = adjacency_matrix[i][j];
+          adjacencyMatrix2[i][j] = adjacency_matrix2[i][j];
+        }
 
 
+      for (int i = 1; i <= number_of_nodes; i++) {
+        for (int j = 1; j <= number_of_nodes; j++) {
+          if (adjacencyMatrix[i][j] == 0 ) {
+            adjacencyMatrix[i][j] = Integer.MAX_VALUE;
+          }
+          if (adjacencyMatrix2[i][j] == 0) {
+            adjacencyMatrix2[i][j] = Integer.MAX_VALUE;
+          }
+        }
+      }
+
+      for (int i: dead_nodes){
+        for(int j=1;j<number_of_nodes;j++){
+          adjacencyMatrix2[i][j]=Integer.MAX_VALUE;
+          adjacencyMatrix2[j][i]=Integer.MAX_VALUE;
+          adjacencyMatrix[i][j]=Integer.MAX_VALUE;
+          adjacencyMatrix[j][i]=Integer.MAX_VALUE;
+        }
+      }
+    }
+
+    public void run()
+    {
+      int evaluationNode;
+
+
+      for (int i = 1; i <= number_of_nodes; i++)
+      {
+        prev[i] = 0;
+        width[i] = Integer.MIN_VALUE;
+      }
+
+      unsettled.add(source);
+      width[source] = Integer.MAX_VALUE;
+      distances[source] = 0;
+      prev[source] = 0;
+      while (!unsettled.isEmpty())
+      {
+        evaluationNode = getNodeWithMaximumWidthFromUnsettled();
+        unsettled.remove(evaluationNode);
+        settled.add(evaluationNode);
+        evaluateNeighbours(evaluationNode);
+      }
+
+      controller.report_routing(source,prev,width,distances);
+
+    }
+ 
+    private int getNodeWithMaximumWidthFromUnsettled()
+    {
+        int max;
+        int node = 0;
+ 
+        Iterator<Integer> iterator = unsettled.iterator();
+        node = iterator.next();
+        max = width[node];
+        for (int i = 1; i <= distances.length; i++)
+        {
+            if (unsettled.contains(i))
+            {
+                if (width[i] >  max)
+                {
+                    max = width[i];
+                    node = i;
+                    //System.out.println("max = " + max + " node number = " + node);
+                }
+            }
+        }
+        return node;
+    }
+ 
+    private void evaluateNeighbours(int evaluationNode)
+    {
+        int edgeWidth = -1;
+        int newWidth = -1;
+        int edgeDistance = -1;
+        int newDistance = -1;
+ 
+        for (int destinationNode = 1; destinationNode <= number_of_nodes; destinationNode++)
+        {
+            if (!settled.contains(destinationNode))
+            {
+                if (adjacencyMatrix[evaluationNode][destinationNode] != Integer.MAX_VALUE)
+                {
+                    edgeWidth = adjacencyMatrix[evaluationNode][destinationNode];
+                    newWidth = Math.min(edgeWidth, width[evaluationNode]);
+                    edgeDistance = adjacencyMatrix2[evaluationNode][destinationNode];
+                    newDistance = distances[evaluationNode] + edgeDistance;
+                     
+                    if (newWidth > width[destinationNode]) {
+                        width[destinationNode] = newWidth; 
+                        distances[destinationNode] = newDistance;
+                        prev[destinationNode] = evaluationNode;
+                    }
+
+                    if (newWidth == width[destinationNode]) {
+                        distances[destinationNode] = Math.min(newDistance, distances[destinationNode]);
+                        if (newDistance < distances[destinationNode]) {
+                          prev[destinationNode] = evaluationNode;
+                        }
+                    }
+                    // System.out.println("width[" + destinationNode + "] = " + width[destinationNode]);
+                    // System.out.println("distances[" + destinationNode + "] = " + distances[destinationNode]);
+                    
+                    unsettled.add(destinationNode);
+                    // System.out.println("node " + destinationNode + " is added to unsettled");
+                }
+            }
+        }
+    }
+
+}
 
 class SwitchInfo {
   public int port;
@@ -33,6 +171,10 @@ public class controller{
   private static DatagramSocket datagramSocket = null; 
   private static int M=5;
   private static int K=1000;
+  private static boolean quiet=true;
+  private static int num;
+  private static int adjacency_matrix[][];
+  private static int adjacency_matrix2[][];
   public static void main (String[] args) {
 
     // Read topo file and put the result in an ArrayList
@@ -57,7 +199,7 @@ public class controller{
 
 
     int n=result.get(0).get(0);//the number of swithes
-
+    num=n;
       for(int i = 0; i < n; i++)//initialize
     {
       SwitchInfo node=new SwitchInfo();
@@ -73,6 +215,15 @@ public class controller{
 
     }
 
+    adjacency_matrix = new int[num + 1][ num + 1];
+    adjacency_matrix2 = new int[num + 1][num + 1];
+ 
+    for (int i = 1; i < result.size(); i++) {
+      adjacency_matrix[result.get(i).get(0)][result.get(i).get(1)] = result.get(i).get(2);
+      adjacency_matrix[result.get(i).get(1)][result.get(i).get(0)] = result.get(i).get(2); 
+      adjacency_matrix2[result.get(i).get(0)][result.get(i).get(1)] = result.get(i).get(3);
+      adjacency_matrix2[result.get(i).get(1)][result.get(i).get(0)] = result.get(i).get(3); 
+    }
   
     init();
  
@@ -81,7 +232,7 @@ public class controller{
           byte[] buffer = new byte[1024 * 64]; 
           DatagramPacket packet = new DatagramPacket(buffer, buffer.length);  
           datagramSocket.receive(packet);
-          new Thread(new packet_handler(packet)).start();  
+          new Thread(new packet_handler(packet,quiet)).start();  
         } catch (Exception e) {  
             e.printStackTrace();  
         }  
@@ -125,8 +276,8 @@ public class controller{
     Timer timer=new Timer();
     timer.schedule(new Host_timer_task(switchID),M*K);
     current_switch.receive_timer=timer;
-    System.out.println("switch " + switchID + " is alive");
-
+    System.out.println("get register request from switch "+ switchID);
+    System.out.println("send response to switch "+ switchID);
     for(Integer connectP : current_switch.connect){
       String str;
       if(list.get(connectP-1).alive==1){
@@ -148,7 +299,9 @@ public class controller{
       dead.receive_timer.cancel();
       routing_calculate();
     }catch (Exception e){
+      System.err.println("Exception when switchID= "+ switchID);
       System.err.println("Exception caught in dead_switch:" + e);
+
     }
   }
 
@@ -160,19 +313,48 @@ public class controller{
       timer.schedule(new Host_timer_task(switchID),M*K);
       alive.receive_timer=timer;
     }catch (Exception e){
-      System.err.println("Exception caught in dead_switch:" + e);
+      System.err.println("Exception when switchID= "+ switchID);
+      System.err.println("Exception caught in alive_switch:" + e);
     }
   }
 
   public static void routing_calculate(){
-    System.out.println("Routing table re-calculated");
+    HashSet<Integer> dead_nodes=new HashSet<Integer>();
+    for(int i=0;i<num;i++){
+      if(list.get(i).alive==0){
+        dead_nodes.add(i+1);
+      }
+    }
+
+    new Thread(new Widest_Shortest_Path(adjacency_matrix,adjacency_matrix2,num,1,dead_nodes)).start();  
+
+    
   }
+
+  public static void report_routing(int source, int[] prev, int [] width, int[] distances){
+    System.out.println("Routing table re-calculated");
+    for(int i=1;i<=num;i++){
+      System.out.print(prev[i]+" ");
+    }
+    System.out.println();
+    for(int i=1;i<=num;i++){
+      System.out.print(width[i]+" ");
+    }
+    System.out.println();
+    for(int i=1;i<=num;i++){
+      System.out.print(distances[i]+ " ");
+    }
+    System.out.println();
+  }
+
 }
 
 class packet_handler implements Runnable {  
-    private DatagramPacket packet;  
-    public packet_handler(DatagramPacket packet){  
+    private DatagramPacket packet; 
+    boolean quiet; 
+    public packet_handler(DatagramPacket packet, boolean quiet){  
         this.packet = packet;  
+        this.quiet=quiet;
     }  
 
     public void run() {  
@@ -180,7 +362,9 @@ class packet_handler implements Runnable {
           String str = new String(packet.getData()); 
           InetAddress address = packet.getAddress(); 
           int port = packet.getPort(); 
-          System.out.println("received: "+ str);
+          if(!quiet){
+            System.out.println("received: "+ str);
+          }
 
           String[] word = str.split(" ");
           if(word[0].equals("REGISTER_REQUEST")){
@@ -197,11 +381,11 @@ class packet_handler implements Runnable {
     }  
 }
 
-class Host_timer_task extends TimerTask { //handle all kinds of timer
+class Host_timer_task extends TimerTask { 
 
   private int switchID;
 
-  Host_timer_task (int switchID){// for type 0
+  Host_timer_task (int switchID){
     this.switchID=switchID;
   }
 

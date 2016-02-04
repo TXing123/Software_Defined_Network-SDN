@@ -4,6 +4,7 @@ import java.lang.Thread;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.ArrayList;
+import java.lang.Math;
 
 class NeighborInfo {
   public int switchID;
@@ -30,15 +31,37 @@ public class Switch {
   private static String serverHostname;
   private static int K=1000;
   private static int M=5;
-
+  private static boolean registered=false;
+  private static int fail_neighbor=-1;
+  private static boolean quiet=true;
   public static void main (String[] args) {
     try {
-      serverHostname = new String ("127.0.0.1");
-      switchID = Integer.parseInt(args[0]);
-      if (args.length > 1){
+      serverHostname = new String ("localhost");
+      switchID = Integer.parseInt(args[0].trim());
+      boolean has_fail_neighbor=false;
+      /*for (String s: args){
+        if (s.equals("-f")){
+          has_fail_neighbor=true;
+          continue;
+        }
+        else if(s.equals("-nq")){
+          quiet=false;
+          continue;
+        }
+        else if(has_fail_neighbor){
+          fail_neighbor=Integer.parseInt(s);
+          has_fail_neighbor=false;
+        }
+        else{
+          if (args.length > 1){
           serverHostname = args[1];
           serverPort=Integer.parseInt(args[2]);
+          }
+        }
       }
+*/
+
+
 
       
       init();
@@ -48,7 +71,7 @@ public class Switch {
         byte[] buffer = new byte[1024 * 64]; 
         DatagramPacket packet = new DatagramPacket(buffer, buffer.length);  
         socket.receive(packet);
-        new Thread(new packet_handler(packet)).start();  
+        new Thread(new packet_handler(packet,quiet)).start();  
       }
     }
     catch (Exception e) {
@@ -58,11 +81,11 @@ public class Switch {
 
   public static void init() throws SocketException{  
     try {
-        socket = new DatagramSocket(0);  
-        System.out.println("client " + switchID + " start success!");  
+      socket = new DatagramSocket(0);  
+      System.out.println("client " + switchID + " start success!");  
     } catch (Exception e) {  
-        socket = null;  
-        System.out.println("client " + switchID + " start fail!");
+      socket = null;  
+      System.out.println("client " + switchID + " start fail!");
     }  
   }  
 
@@ -77,20 +100,25 @@ public class Switch {
       Timer timer = new Timer();
       timer.schedule(new Periodic_timer_task(2),0, K);
     } catch (Exception e) {  
-      System.err.println("Exception caught:" + e);  
+      System.err.println("Exception caught in register_to_host:" + e);  
     }  
   }
 
   public static void host_response(String str){ //handle respones from host
     try{
+      if(!registered){
+        System.out.println("register success!");
+        registered=true;
+      }
       String[] word = str.split(" ");
       NeighborInfo neighbor= new NeighborInfo();
-      neighbor_list.add(neighbor);
+
       neighbor.switchID=Integer.parseInt(word[1].trim());
       neighbor.alive=Integer.parseInt(word[2].trim());
-      if(neighbor.alive!=0){
+      if(neighbor.alive!=0 && neighbor.switchID!=fail_neighbor){
         neighbor.address=InetAddress.getByName(word[3]);
         neighbor.port=Integer.parseInt(word[4].trim());
+        System.out.println("switch "+ neighbor.switchID+ " is alive");
         Timer timer = new Timer();
         timer.schedule(new Periodic_timer_task(1,neighbor.address,neighbor.port,switchID),0, K);
         neighbor.send_timer=timer;
@@ -98,30 +126,32 @@ public class Switch {
         timer2.schedule(new Periodic_timer_task(3,neighbor.switchID),M*K);
         neighbor.receive_timer=timer2;
       }
-      
+      neighbor_list.add(neighbor);
     }catch (Exception e){
-      System.err.println("Exception caught:" + e);
+      System.err.println("Exception caught in host_response:" + e);
     }
   }
 
-  public static void alive_swith(int ID, InetAddress address, int port){ //handle alive neighbor
+  public static void alive_switch(int ID, InetAddress address, int port){ //handle alive neighbor
     try{
       for( NeighborInfo s : neighbor_list){
-        if (s.switchID==ID) {
+        if (s.switchID==ID && s.switchID!=fail_neighbor) {
           if(s.alive==0){
-          s.alive=1;
-          s.address=address;
-          s.port=port;
-          Timer timer = new Timer();
-          timer.schedule(new Periodic_timer_task(1,s.address,s.port,switchID),0, K);
-          s.send_timer=timer;
-          Timer timer2=new Timer();
-          timer2.schedule(new Periodic_timer_task(3,ID),M*K);
-          s.receive_timer=timer2;
-          topology_update();
+            s.alive=1;
+            s.address=address;
+            s.port=port;
+            System.out.println("switch "+ s.switchID+ " is alive");
+            Timer timer = new Timer();
+            timer.schedule(new Periodic_timer_task(1,s.address,s.port,switchID),0, K);
+            s.send_timer=timer;
+            Timer timer2=new Timer();
+            timer2.schedule(new Periodic_timer_task(3,ID),M*K);
+            s.receive_timer=timer2;
+            topology_update();
           }
           else{
-            s.receive_timer.cancel();
+            if(s.receive_timer!=null)
+              s.receive_timer.cancel();
             Timer timer2=new Timer();
             timer2.schedule(new Periodic_timer_task(3,ID),M*K);
             s.receive_timer=timer2;
@@ -132,7 +162,7 @@ public class Switch {
       
       
     }catch (Exception e){
-      System.err.println("Exception caught:" + e);
+      System.err.println("Exception caught in alive_switch:" + e);
     }
   }
 
@@ -170,16 +200,20 @@ public class Switch {
 
   public static void topology_update(){
     try{
-      String str=new String();
-
+      String str="TOPOLOGY_UPDATE "+switchID;
+      if(neighbor_list==null){
+        System.out.println("error");
+        return;
+      }
       for(NeighborInfo s: neighbor_list){
         if(s.alive==1){
           str=str+" " + s.switchID;
         }
       }
-      SendString("TOPOLOGY_UPDATE "+switchID+ str, InetAddress.getByName(serverHostname),serverPort);
+
+      SendString(str, InetAddress.getByName(serverHostname),serverPort);
     } catch (Exception e){
-      System.err.println("Exception caught:" + e);
+      System.err.println("Exception caught in topology_update:" + e);
     }
   }
 }
@@ -205,52 +239,56 @@ class Periodic_timer_task extends TimerTask { //handle all kinds of timer
     this.type=type;
   }
 
-    public void run() {
-      try {
-        if(type==1){
-          String str="KEEP_ALIVE "+switchID;
-          Switch.SendString(str,address,port);
-        }
-        else if(type==2){
-          Switch.topology_update();
-        }
-        else if(type==3){
-          System.out.println("switch " + neighbor_ID +" is down");
-          Switch.dead_switch(neighbor_ID);
-        }
-        
-      } catch (Exception e) {
-        System.err.println("Exception caught:" + e);
+  public void run() {
+    try {
+      if(type==1){
+        String str="KEEP_ALIVE "+switchID;
+        Switch.SendString(str,address,port);
       }
+      else if(type==2){
+        Switch.topology_update();
+      }
+      else if(type==3){
+        System.out.println("switch " + neighbor_ID +" is down");
+        Switch.dead_switch(neighbor_ID);
+      }
+
+    } catch (Exception e) {
+      System.err.println("Exception caught:" + e);
     }
+  }
 }
 
 class packet_handler implements Runnable {  
-    private DatagramPacket packet;  
-    packet_handler(DatagramPacket packet){  
-        this.packet = packet;  
+  private DatagramPacket packet;  
+  private boolean quiet;
+  packet_handler(DatagramPacket packet, boolean quiet){  
+    this.packet = packet;  
+    this.quiet=quiet;
+  }  
+
+  public void run() {  
+    try {  
+      String str = new String(packet.getData()); 
+
+      InetAddress address = packet.getAddress(); 
+      int port = packet.getPort();
+      if(!quiet){
+        System.out.println("received: "+ str);
+      }
+      
+      String[] word = str.split(" ");
+      if(word[0].equals("REGISTER_RESPONSE")){
+        Switch.host_response(str);
+      }
+      else if(word[0].equals("KEEP_ALIVE")){
+        Switch.alive_switch(Integer.parseInt(word[1].trim()), address, port);
+      }
+
+    } catch (Exception e) {  
+      System.err.println("Exception caught:" + e);
     }  
-
-    public void run() {  
-        try {  
-          String str = new String(packet.getData()); 
-
-          InetAddress address = packet.getAddress(); 
-          int port = packet.getPort();
-          System.out.println("received: "+ str);
-
-          String[] word = str.split(" ");
-          if(word[0].equals("REGISTER_RESPONSE")){
-            Switch.host_response(str);
-          }
-          else if(word[0].equals("KEEP_ALIVE")){
-            Switch.alive_swith(Integer.parseInt(word[1].trim()), address, port);
-          }
-          
-        } catch (Exception e) {  
-          System.err.println("Exception caught:" + e);
-        }  
-    }  
+  }  
 }
 
 
