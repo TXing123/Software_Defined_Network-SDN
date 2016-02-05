@@ -1,23 +1,10 @@
-osascript -e 'tell application "Terminal" to activate' -e 'tell application "System Events" to tell process "Terminal" to keystroke "t" using command down'
-osascript -e 'tell application "Terminal" to do script "java -cp controller.jar controller" in selected tab of the front window'
 
-osascript -e 'tell application "Terminal" to activate' -e 'tell application "System Events" to tell process "Terminal" to keystroke "t" using command down'
-osascript -e 'tell application "Terminal" to do script "java -cp Switch.jar Switch 1" in selected tab of the front window'
+ #!/bin/bash
+ osascript -e 'tell application "Terminal" to activate' -e 'tell application "System Events" to tell process "Terminal" to keystroke "t" using command down'
+ osascript -e 'tell application "Terminal" to do script "java -cp controller.jar controller | tee log_controller" in selected tab of the front window'
 
-osascript -e 'tell application "Terminal" to activate' -e 'tell application "System Events" to tell process "Terminal" to keystroke "t" using command down'
-osascript -e 'tell application "Terminal" to do script "java -cp Switch.jar Switch 2" in selected tab of the front window'
-
-osascript -e 'tell application "Terminal" to activate' -e 'tell application "System Events" to tell process "Terminal" to keystroke "t" using command down'
-osascript -e 'tell application "Terminal" to do script "java -cp Switch.jar Switch 3" in selected tab of the front window'
-
-osascript -e 'tell application "Terminal" to activate' -e 'tell application "System Events" to tell process "Terminal" to keystroke "t" using command down'
-osascript -e 'tell application "Terminal" to do script "java -cp Switch.jar Switch 4" in selected tab of the front window'
-
-osascript -e 'tell application "Terminal" to activate' -e 'tell application "System Events" to tell process "Terminal" to keystroke "t" using command down'
-osascript -e 'tell application "Terminal" to do script "java -cp Switch.jar Switch 5" in selected tab of the front window'
-
-osascript -e 'tell application "Terminal" to activate' -e 'tell application "System Events" to tell process "Terminal" to keystroke "t" using command down'
-osascript -e 'tell application "Terminal" to do script "java -cp Switch.jar Switch 6" in selected tab of the front window'
-
-
+ for i in `seq 1 6`; do
+ 	osascript -e 'tell application "Terminal" to activate' -e 'tell application "System Events" to tell process "Terminal" to keystroke "t" using command down'
+ 	osascript -e 'tell application "Terminal" to do script "java -cp Switch.jar Switch '$i' localhost 5000| tee log_'$i'" in selected tab of the front window'
+ done
 

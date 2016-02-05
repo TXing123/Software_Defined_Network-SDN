@@ -133,11 +133,7 @@ class Widest_Shortest_Path implements Runnable {
                           prev[destinationNode] = evaluationNode;
                         }
                     }
-                    // System.out.println("width[" + destinationNode + "] = " + width[destinationNode]);
-                    // System.out.println("distances[" + destinationNode + "] = " + distances[destinationNode]);
-                    
                     unsettled.add(destinationNode);
-                    // System.out.println("node " + destinationNode + " is added to unsettled");
                 }
             }
         }
@@ -149,18 +145,16 @@ class SwitchInfo {
   public int port;
   public InetAddress address;
   public int alive;
-  public ArrayList<Integer> connect;//store the neighboring switchID
+  public HashSet<Integer> connect;//store the neighboring switchID
+  public HashSet<Integer> alive_neighbor;
   public Timer receive_timer;
-  SwitchInfo(int ID, int port, InetAddress address, int alive){
-    this.port=port;
-    this.address=address;
-    this.alive=alive;
-  }
+
   SwitchInfo(){
     this.port=-1;
     this.alive=0;
-    this.connect=new ArrayList<Integer>();
+    this.connect=new HashSet<Integer>();
     this.receive_timer=null;
+    this.alive_neighbor=new HashSet<Integer>();
   }
 
 }
@@ -173,6 +167,8 @@ public class controller{
   private static int K=1000;
   private static boolean quiet=true;
   private static int num;
+  private static int ori_adjacency_matrix[][];
+  private static int ori_adjacency_matrix2[][];
   private static int adjacency_matrix[][];
   private static int adjacency_matrix2[][];
   public static void main (String[] args) {
@@ -215,10 +211,16 @@ public class controller{
 
     }
 
+    ori_adjacency_matrix = new int[num + 1][ num + 1];
+    ori_adjacency_matrix2 = new int[num + 1][num + 1];
     adjacency_matrix = new int[num + 1][ num + 1];
     adjacency_matrix2 = new int[num + 1][num + 1];
- 
     for (int i = 1; i < result.size(); i++) {
+      ori_adjacency_matrix[result.get(i).get(0)][result.get(i).get(1)] = result.get(i).get(2);
+      ori_adjacency_matrix[result.get(i).get(1)][result.get(i).get(0)] = result.get(i).get(2); 
+      ori_adjacency_matrix2[result.get(i).get(0)][result.get(i).get(1)] = result.get(i).get(3);
+      ori_adjacency_matrix2[result.get(i).get(1)][result.get(i).get(0)] = result.get(i).get(3); 
+
       adjacency_matrix[result.get(i).get(0)][result.get(i).get(1)] = result.get(i).get(2);
       adjacency_matrix[result.get(i).get(1)][result.get(i).get(0)] = result.get(i).get(2); 
       adjacency_matrix2[result.get(i).get(0)][result.get(i).get(1)] = result.get(i).get(3);
@@ -273,6 +275,7 @@ public class controller{
     current_switch.alive=1;
     current_switch.address=address;
     current_switch.port=port;
+    current_switch.alive_neighbor=new HashSet<Integer>();
     Timer timer=new Timer();
     timer.schedule(new Host_timer_task(switchID),M*K);
     current_switch.receive_timer=timer;
@@ -282,13 +285,14 @@ public class controller{
       String str;
       if(list.get(connectP-1).alive==1){
         str="REGISTER_RESPONSE "+connectP + " " + "1" + " " + list.get(connectP - 1).address.getHostName() + " " + list.get(connectP - 1).port;
+        current_switch.alive_neighbor.add(connectP);
       }
       else{
         str="REGISTER_RESPONSE "+connectP + " " + "0";
       }
       SendString(str,address,port);
     }
-
+    SendString("REGISTER_RESPONSE_END "+ switchID, address,port);
     routing_calculate();
   }
 
@@ -297,6 +301,7 @@ public class controller{
       SwitchInfo dead=list.get(switchID-1);
       dead.alive=0;
       dead.receive_timer.cancel();
+      dead.alive_neighbor=null;
       routing_calculate();
     }catch (Exception e){
       System.err.println("Exception when switchID= "+ switchID);
@@ -305,13 +310,38 @@ public class controller{
     }
   }
 
-  public static void alive_switch(int switchID){
+  public static void alive_switch(int switchID, String str){
     try{
       SwitchInfo alive=list.get(switchID-1);
       alive.receive_timer.cancel();
       Timer timer=new Timer();
       timer.schedule(new Host_timer_task(switchID),M*K);
       alive.receive_timer=timer;
+      
+      HashSet<Integer> alive_neighbor = new HashSet<Integer>();
+      String[] word = str.split(" ");
+      for(int i=2;i<word.length; i++){
+        alive_neighbor.add(Integer.parseInt(word[i].trim()));
+      }
+
+      if(alive_neighbor!=null && alive.alive_neighbor!=null&&  alive_neighbor.containsAll(alive.alive_neighbor) && alive.alive_neighbor.containsAll(alive_neighbor)){
+        return;
+      }
+      for(Integer i: alive.alive_neighbor){ 
+        adjacency_matrix[switchID][i] = 0;
+        adjacency_matrix[i][switchID] = 0; 
+        adjacency_matrix2[switchID][i]= 0;
+        adjacency_matrix2[i][switchID]= 0; 
+      }
+
+      for(Integer i : alive_neighbor){
+        adjacency_matrix[switchID][i] = ori_adjacency_matrix[switchID][i];
+        adjacency_matrix[i][switchID] = ori_adjacency_matrix[i][switchID]; 
+        adjacency_matrix2[switchID][i]= ori_adjacency_matrix2[switchID][i];
+        adjacency_matrix2[i][switchID]= ori_adjacency_matrix2[i][switchID]; 
+      }
+      alive.alive_neighbor=alive_neighbor;
+      routing_calculate();
     }catch (Exception e){
       System.err.println("Exception when switchID= "+ switchID);
       System.err.println("Exception caught in alive_switch:" + e);
@@ -325,26 +355,22 @@ public class controller{
         dead_nodes.add(i+1);
       }
     }
-
-    new Thread(new Widest_Shortest_Path(adjacency_matrix,adjacency_matrix2,num,1,dead_nodes)).start();  
-
+    
+    System.out.println("re-calculating routing table");
+    for(int i=0;i<num;i++){
+      if(list.get(i).alive==1){
+        new Thread(new Widest_Shortest_Path(adjacency_matrix,adjacency_matrix2,num,i+1,dead_nodes)).start();  
+      }
+    }
     
   }
 
-  public static void report_routing(int source, int[] prev, int [] width, int[] distances){
-    System.out.println("Routing table re-calculated");
+  public static void report_routing(int source, int[] prev, int [] width, int[] leg){
+
     for(int i=1;i<=num;i++){
-      System.out.print(prev[i]+" ");
+      //dest router width leg
+      SendString("NEW_ROUTING_INFO "+i+" "+ prev[i]+ " "+width[i]+" "+leg[i],list.get(source-1).address, list.get(source-1).port);
     }
-    System.out.println();
-    for(int i=1;i<=num;i++){
-      System.out.print(width[i]+" ");
-    }
-    System.out.println();
-    for(int i=1;i<=num;i++){
-      System.out.print(distances[i]+ " ");
-    }
-    System.out.println();
   }
 
 }
@@ -372,7 +398,7 @@ class packet_handler implements Runnable {
             controller.register(switchID,address,port);
           }
           else if(word[0].equals("TOPOLOGY_UPDATE")){
-            controller.alive_switch(Integer.parseInt(word[1].trim()));
+            controller.alive_switch(Integer.parseInt(word[1].trim()),str);
           }
           
         } catch (Exception e) {  
