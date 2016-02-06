@@ -25,6 +25,7 @@ class Widest_Shortest_Path implements Runnable {
       this.source=source;
       adjacencyMatrix = new int[number_of_nodes + 1][number_of_nodes + 1];
       adjacencyMatrix2 = new int[number_of_nodes + 1][number_of_nodes + 1];
+
       for (int i = 1; i <= number_of_nodes; i++) 
         for (int j = 1; j <= number_of_nodes; j++) {
           adjacencyMatrix[i][j] = adjacency_matrix[i][j];
@@ -51,15 +52,16 @@ class Widest_Shortest_Path implements Runnable {
           adjacencyMatrix[j][i]=Integer.MAX_VALUE;
         }
       }
+
     }
 
     public void run()
     {
       int evaluationNode;
 
-
       for (int i = 1; i <= number_of_nodes; i++)
       {
+        distances[i] = Integer.MAX_VALUE;
         prev[i] = 0;
         width[i] = Integer.MIN_VALUE;
       }
@@ -68,6 +70,7 @@ class Widest_Shortest_Path implements Runnable {
       width[source] = Integer.MAX_VALUE;
       distances[source] = 0;
       prev[source] = 0;
+
       while (!unsettled.isEmpty())
       {
         evaluationNode = getNodeWithMaximumWidthFromUnsettled();
@@ -96,10 +99,10 @@ class Widest_Shortest_Path implements Runnable {
                 {
                     max = width[i];
                     node = i;
-                    //System.out.println("max = " + max + " node number = " + node);
                 }
             }
         }
+
         return node;
     }
  
@@ -133,6 +136,7 @@ class Widest_Shortest_Path implements Runnable {
                           prev[destinationNode] = evaluationNode;
                         }
                     }
+
                     unsettled.add(destinationNode);
                 }
             }
@@ -171,6 +175,7 @@ public class controller{
   private static int ori_adjacency_matrix2[][];
   private static int adjacency_matrix[][];
   private static int adjacency_matrix2[][];
+  private static Date date=new Date();
   public static void main (String[] args) {
 
     // Read topo file and put the result in an ArrayList
@@ -178,6 +183,7 @@ public class controller{
     try {
         BufferedReader in = new BufferedReader(new FileReader("topo_config.txt"));
         String line;
+
         while((line = in.readLine()) != null)
         {
             ArrayList<Integer> temp = new ArrayList<Integer>();
@@ -186,35 +192,35 @@ public class controller{
                 temp.add(Integer.parseInt(element));
             }
             result.add(temp);
-            
         }
         in.close();
+
     } catch (IOException e) {
         
     }
 
 
-    int n=result.get(0).get(0);//the number of swithes
-    num=n;
-      for(int i = 0; i < n; i++)//initialize
-    {
+    int n = result.get(0).get(0);//the number of swithes
+    num = n;
+
+    //initialize
+    for(int i = 0; i < n; i++) {
       SwitchInfo node=new SwitchInfo();
       // assign ID number from 1 to 6
       list.add(node);
     }
 
     // construct SwitchInfo.connect
-    for (int i = 1; i < result.size(); i++) {
-      
+    for (int i = 1; i < result.size(); i++) { 
       list.get(result.get(i).get(0) - 1).connect.add(result.get(i).get(1));
       list.get(result.get(i).get(1) - 1).connect.add(result.get(i).get(0));
-
     }
 
     ori_adjacency_matrix = new int[num + 1][ num + 1];
     ori_adjacency_matrix2 = new int[num + 1][num + 1];
     adjacency_matrix = new int[num + 1][ num + 1];
     adjacency_matrix2 = new int[num + 1][num + 1];
+
     for (int i = 1; i < result.size(); i++) {
       ori_adjacency_matrix[result.get(i).get(0)][result.get(i).get(1)] = result.get(i).get(2);
       ori_adjacency_matrix[result.get(i).get(1)][result.get(i).get(0)] = result.get(i).get(2); 
@@ -229,16 +235,16 @@ public class controller{
   
     init();
  
-      while(true){  
-        try {  
-          byte[] buffer = new byte[1024 * 64]; 
-          DatagramPacket packet = new DatagramPacket(buffer, buffer.length);  
-          datagramSocket.receive(packet);
-          new Thread(new packet_handler(packet,quiet)).start();  
-        } catch (Exception e) {  
-            e.printStackTrace();  
-        }  
-      }
+    while(true){  
+      try {  
+        byte[] buffer = new byte[1024 * 64]; 
+        DatagramPacket packet = new DatagramPacket(buffer, buffer.length);  
+        datagramSocket.receive(packet);
+        new Thread(new packet_handler(packet,quiet)).start();  
+      } catch (Exception e) {  
+          e.printStackTrace();  
+      } 
+    }
   }
 
   public static void init(){
@@ -279,8 +285,11 @@ public class controller{
     Timer timer=new Timer();
     timer.schedule(new Host_timer_task(switchID),M*K);
     current_switch.receive_timer=timer;
-    System.out.println("get register request from switch "+ switchID);
-    System.out.println("send response to switch "+ switchID);
+    date=new Date();
+
+    System.out.println(date.toString() + " get register request from switch "+ switchID);
+    System.out.println(date.toString() + " send response to switch "+ switchID);
+
     for(Integer connectP : current_switch.connect){
       String str;
       if(list.get(connectP-1).alive==1){
@@ -292,6 +301,7 @@ public class controller{
       }
       SendString(str,address,port);
     }
+
     SendString("REGISTER_RESPONSE_END "+ switchID, address,port);
     routing_calculate();
   }
@@ -306,7 +316,6 @@ public class controller{
     }catch (Exception e){
       System.err.println("Exception when switchID= "+ switchID);
       System.err.println("Exception caught in dead_switch:" + e);
-
     }
   }
 
@@ -320,6 +329,7 @@ public class controller{
       
       HashSet<Integer> alive_neighbor = new HashSet<Integer>();
       String[] word = str.split(" ");
+
       for(int i=2;i<word.length; i++){
         alive_neighbor.add(Integer.parseInt(word[i].trim()));
       }
@@ -327,6 +337,7 @@ public class controller{
       if(alive_neighbor!=null && alive.alive_neighbor!=null&&  alive_neighbor.containsAll(alive.alive_neighbor) && alive.alive_neighbor.containsAll(alive_neighbor)){
         return;
       }
+
       for(Integer i: alive.alive_neighbor){ 
         adjacency_matrix[switchID][i] = 0;
         adjacency_matrix[i][switchID] = 0; 
@@ -340,23 +351,26 @@ public class controller{
         adjacency_matrix2[switchID][i]= ori_adjacency_matrix2[switchID][i];
         adjacency_matrix2[i][switchID]= ori_adjacency_matrix2[i][switchID]; 
       }
+
       alive.alive_neighbor=alive_neighbor;
       routing_calculate();
+
     }catch (Exception e){
-      System.err.println("Exception when switchID= "+ switchID);
-      System.err.println("Exception caught in alive_switch:" + e);
+      
     }
   }
 
   public static void routing_calculate(){
     HashSet<Integer> dead_nodes=new HashSet<Integer>();
+
     for(int i=0;i<num;i++){
       if(list.get(i).alive==0){
         dead_nodes.add(i+1);
       }
     }
-    
-    System.out.println("re-calculating routing table");
+
+    date=new Date();
+    System.out.println(date.toString() + " re-calculating routing table");
     for(int i=0;i<num;i++){
       if(list.get(i).alive==1){
         new Thread(new Widest_Shortest_Path(adjacency_matrix,adjacency_matrix2,num,i+1,dead_nodes)).start();  
@@ -372,12 +386,12 @@ public class controller{
       SendString("NEW_ROUTING_INFO "+i+" "+ prev[i]+ " "+width[i]+" "+leg[i],list.get(source-1).address, list.get(source-1).port);
     }
   }
-
 }
 
 class packet_handler implements Runnable {  
     private DatagramPacket packet; 
     boolean quiet; 
+    private Date date=new Date();
     public packet_handler(DatagramPacket packet, boolean quiet){  
         this.packet = packet;  
         this.quiet=quiet;
@@ -389,7 +403,8 @@ class packet_handler implements Runnable {
           InetAddress address = packet.getAddress(); 
           int port = packet.getPort(); 
           if(!quiet){
-            System.out.println("received: "+ str);
+            date=new Date();
+            System.out.println(date.toString() + " received: "+ str);
           }
 
           String[] word = str.split(" ");
@@ -408,21 +423,22 @@ class packet_handler implements Runnable {
 }
 
 class Host_timer_task extends TimerTask { 
-
   private int switchID;
+  private static Date date=new Date();
 
   Host_timer_task (int switchID){
     this.switchID=switchID;
   }
 
-    public void run() {
-      try {
-          System.out.println("switch " + switchID +" is down");
-          controller.dead_switch(switchID);
-      } catch (Exception e) {
-        System.err.println("Exception caught in TimerTask:" + e);
-      }
+  public void run() {
+    try {
+        date=new Date();
+        System.out.println(date.toString() + " switch " + switchID +" is down");
+        controller.dead_switch(switchID);
+    } catch (Exception e) {
+      System.err.println("Exception caught in TimerTask:" + e);
     }
+  }
 }
 
 

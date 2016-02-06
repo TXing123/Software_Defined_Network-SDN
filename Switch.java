@@ -32,6 +32,8 @@ public class Switch {
   private static int fail_neighbor=-1;
   private static boolean quiet=true;
   private static Date date=new Date();
+  private static HashMap<Integer, ArrayList<Integer>> map = new HashMap<Integer, ArrayList<Integer>>();
+  
   public static void main (String[] args) {
     try {
       serverHostname = new String ("localhost");
@@ -56,10 +58,6 @@ public class Switch {
         }
       }
 
-
-
-
-      
       init();
       register_to_host();
 
@@ -75,6 +73,7 @@ public class Switch {
         }
 
         String[] word = str.split(" ");
+
         if(word[0].equals("REGISTER_RESPONSE")){
           host_response(str);
         }
@@ -87,8 +86,10 @@ public class Switch {
           continue;
         }
       }
+
       date=new Date();
       System.out.println(date.toString()+" " + "start listening");
+
       while(true){
         byte[] buffer = new byte[1024 * 64]; 
         DatagramPacket packet = new DatagramPacket(buffer, buffer.length);  
@@ -115,7 +116,7 @@ public class Switch {
     try {   
       byte[] sendData  = new byte[1024]; 
       date=new Date();
-      System.out.println (date.toString()+" " + "Sending register information to " + serverHostname + " on port " + serverPort);
+      System.out.println (date.toString()+" " + "Sending register information to " + serverHostname + " on port " + serverPort+"\n");
       String request="REGISTER_REQUEST " + switchID;
       sendData = request.getBytes(); 
       DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, InetAddress.getByName(serverHostname), serverPort); 
@@ -127,18 +128,40 @@ public class Switch {
     }  
   }
 
+  public static void handle_hashMap(HashMap<Integer, ArrayList<Integer>> map, String str) {
+    String[] word = str.split(" ");
+    int dest = Integer.parseInt(word[1].trim());
+    int router = Integer.parseInt(word[2].trim());
+    int band = Integer.parseInt(word[3].trim());
+    int leg = Integer.parseInt(word[4].trim());
+
+    if(!map.containsKey(dest)) {
+      ArrayList<Integer> temp = new ArrayList<Integer>();
+      temp.add(router);
+      temp.add(band);
+      temp.add(leg);
+      map.put(dest, temp);
+    } else {
+      map.get(dest).clear();
+      map.get(dest).add(router);
+      map.get(dest).add(band);
+      map.get(dest).add(leg);
+    }
+
+  }
+
   public static void host_response(String str){ //handle respones from host
     try{
       String[] word = str.split(" ");
       NeighborInfo neighbor= new NeighborInfo();
-
       neighbor.switchID=Integer.parseInt(word[1].trim());
       neighbor.alive=Integer.parseInt(word[2].trim());
+
       if(neighbor.alive!=0){
         neighbor.address=InetAddress.getByName(word[3]);
         neighbor.port=Integer.parseInt(word[4].trim());
         date=new Date();
-        System.out.println(date.toString()+" switch "+ neighbor.switchID+ " is alive");
+        System.out.println(date.toString()+" switch "+ neighbor.switchID+ " is alive\n");
         Timer timer = new Timer();
         timer.schedule(new Periodic_timer_task(1,neighbor.address,neighbor.port,switchID),0, K);
         neighbor.send_timer=timer;
@@ -161,7 +184,7 @@ public class Switch {
             s.address=address;
             s.port=port;
             date=new Date();
-            System.out.println(date.toString()+ " switch "+ s.switchID+ " is alive");
+            System.out.println(date.toString()+ " switch "+ s.switchID+ " is alive\n");
             Timer timer = new Timer();
             timer.schedule(new Periodic_timer_task(1,s.address,s.port,switchID),0, K);
             s.send_timer=timer;
@@ -179,9 +202,6 @@ public class Switch {
           }
         }
       }
-
-      
-      
     }catch (Exception e){
       System.err.println("Exception caught in alive_switch:" + e);
     }
@@ -198,7 +218,6 @@ public class Switch {
         }
       }
 
-      
     }catch (Exception e){
       System.err.println("Exception caught:" + e);
     }
@@ -240,13 +259,19 @@ public class Switch {
 
   public static void routing_update(String str){
     try{
+      handle_hashMap(map, str);
       String[] word = str.split(" ");
-      int dest=Integer.parseInt(word[1].trim());
-      int router=Integer.parseInt(word[2].trim());
-      int band=Integer.parseInt(word[3].trim());
-      int leg=Integer.parseInt(word[4].trim());
+      String dest = word[1].trim();
+      String router = word[2].trim();
+      String band = word[3].trim();
+      String leg = word[4].trim();
       date=new Date();
-      System.out.print(date.toString()+"\n" + "new routing info\ndest\t\trouter\t\tband\t\tleg\n"+dest+"\t\t"+router+"\t\t"+band+"\t\t"+leg+"\n");
+
+      if (Integer.parseInt(band) == Integer.MAX_VALUE) band = "INF";
+      else if (Integer.parseInt(band) == Integer.MIN_VALUE) band = "0";
+      if (Integer.parseInt(leg) == Integer.MAX_VALUE) leg = "INF";
+      System.out.print(date.toString()+" " + "new routing info\ndest\t\trouter\t\tband\t\tleg\n"+dest+"\t\t"+router+"\t\t"+band+"\t\t"+leg+"\n\n");
+    
     }catch (Exception e){
       System.err.println("Exception caught in routing_update:" + e);
     }
@@ -261,16 +286,19 @@ class Periodic_timer_task extends TimerTask { //handle all kinds of timer
   private int type; //3 for time out detection. 1 for KEEP_ALIVE; 2 for TOPOLOGY_UPDATE; 
   private int neighbor_ID; // record the ID of the neighbor
   private Date date;
+
   Periodic_timer_task (int type, InetAddress address, int port, int switchID){//for type 1
     this.type=type;
     this.address=address;
     this.port=port;
     this.switchID=switchID;
   }
+
   Periodic_timer_task (int type, int neighbor_ID){// for type 0
     this.type=type;
     this.neighbor_ID=neighbor_ID;
   }
+
   Periodic_timer_task (int type){ // for type 2
     this.type=type;
   }
@@ -286,7 +314,7 @@ class Periodic_timer_task extends TimerTask { //handle all kinds of timer
       }
       else if(type==3){
         date=new Date();
-        System.out.println(date.toString()+" switch " + neighbor_ID +" is down");
+        System.out.println(date.toString()+" switch " + neighbor_ID +" is down\n");
         Switch.dead_switch(neighbor_ID);
       }
 
@@ -300,6 +328,7 @@ class packet_handler implements Runnable {
   private DatagramPacket packet;  
   private boolean quiet;
   private Date date=new Date();
+  
   packet_handler(DatagramPacket packet, boolean quiet){  
     this.packet = packet;  
     this.quiet=quiet;
