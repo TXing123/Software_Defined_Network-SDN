@@ -270,7 +270,7 @@ public class Switch {
       if (Integer.parseInt(band) == Integer.MAX_VALUE) band = "INF";
       else if (Integer.parseInt(band) == Integer.MIN_VALUE) band = "0";
       if (Integer.parseInt(leg) == Integer.MAX_VALUE) leg = "INF";
-      System.out.print(date.toString()+" " + "new routing info\ndest\t\trouter\t\tband\t\tleg\n"+dest+"\t\t"+router+"\t\t"+band+"\t\t"+leg+"\n\n");
+      System.out.print(date.toString()+" " + "new routing info\ndest\t\trouter\t\tBW\t\tdelay\n"+dest+"\t\t"+router+"\t\t"+band+"\t\t"+leg+"\n\n");
     
     }catch (Exception e){
       System.err.println("Exception caught in routing_update:" + e);

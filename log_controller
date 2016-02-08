@@ -1,47 +1,74 @@
 controller start success!
-get register request from switch 1
-send response to switch 1
-re-calculating routing table
-get register request from switch 2
-send response to switch 2
-re-calculating routing table
-re-calculating routing table
-re-calculating routing table
-get register request from switch 3
-send response to switch 3
-re-calculating routing table
-re-calculating routing table
-re-calculating routing table
-get register request from switch 4
-send response to switch 4
-re-calculating routing table
-re-calculating routing table
-re-calculating routing table
-re-calculating routing table
-get register request from switch 5
-send response to switch 5
-re-calculating routing table
-re-calculating routing table
-re-calculating routing table
-re-calculating routing table
-get register request from switch 6
-send response to switch 6
-re-calculating routing table
-re-calculating routing table
-re-calculating routing table
-re-calculating routing table
-re-calculating routing table
-re-calculating routing table
-switch 6 is down
-re-calculating routing table
-re-calculating routing table
-re-calculating routing table
-get register request from switch 6
-send response to switch 6
-re-calculating routing table
-re-calculating routing table
-re-calculating routing table
-re-calculating routing table
-re-calculating routing table
-re-calculating routing table
-re-calculating routing table
+Mon Feb 08 10:11:21 EST 2016 get register request from switch 1
+Mon Feb 08 10:11:21 EST 2016 send response to switch 1
+Mon Feb 08 10:11:21 EST 2016 re-calculating routing table
+Mon Feb 08 10:11:21 EST 2016 get register request from switch 2
+Mon Feb 08 10:11:21 EST 2016 send response to switch 2
+Mon Feb 08 10:11:21 EST 2016 re-calculating routing table
+Mon Feb 08 10:11:21 EST 2016 re-calculating routing table
+Mon Feb 08 10:11:21 EST 2016 re-calculating routing table
+Mon Feb 08 10:11:22 EST 2016 get register request from switch 3
+Mon Feb 08 10:11:22 EST 2016 send response to switch 3
+Mon Feb 08 10:11:22 EST 2016 re-calculating routing table
+Mon Feb 08 10:11:22 EST 2016 re-calculating routing table
+Mon Feb 08 10:11:22 EST 2016 re-calculating routing table
+Mon Feb 08 10:11:22 EST 2016 get register request from switch 4
+Mon Feb 08 10:11:22 EST 2016 send response to switch 4
+Mon Feb 08 10:11:22 EST 2016 re-calculating routing table
+Mon Feb 08 10:11:22 EST 2016 re-calculating routing table
+Mon Feb 08 10:11:22 EST 2016 re-calculating routing table
+Mon Feb 08 10:11:22 EST 2016 re-calculating routing table
+Mon Feb 08 10:11:22 EST 2016 get register request from switch 5
+Mon Feb 08 10:11:22 EST 2016 send response to switch 5
+Mon Feb 08 10:11:22 EST 2016 re-calculating routing table
+Mon Feb 08 10:11:22 EST 2016 re-calculating routing table
+Mon Feb 08 10:11:22 EST 2016 re-calculating routing table
+Mon Feb 08 10:11:22 EST 2016 re-calculating routing table
+Mon Feb 08 10:11:23 EST 2016 get register request from switch 6
+Mon Feb 08 10:11:23 EST 2016 send response to switch 6
+Mon Feb 08 10:11:23 EST 2016 re-calculating routing table
+Mon Feb 08 10:11:23 EST 2016 re-calculating routing table
+Mon Feb 08 10:11:23 EST 2016 re-calculating routing table
+Mon Feb 08 10:11:23 EST 2016 re-calculating routing table
+Mon Feb 08 10:11:23 EST 2016 re-calculating routing table
+Mon Feb 08 10:11:24 EST 2016 re-calculating routing table
+Mon Feb 08 10:11:54 EST 2016 re-calculating routing table
+Mon Feb 08 10:11:54 EST 2016 re-calculating routing table
+Mon Feb 08 10:11:54 EST 2016 switch 1 is down
+Mon Feb 08 10:11:54 EST 2016 re-calculating routing table
+Mon Feb 08 10:11:54 EST 2016 re-calculating routing table
+Mon Feb 08 10:15:44 EST 2016 get register request from switch 1
+Mon Feb 08 10:15:44 EST 2016 send response to switch 1
+Mon Feb 08 10:15:44 EST 2016 re-calculating routing table
+Mon Feb 08 10:15:44 EST 2016 re-calculating routing table
+Mon Feb 08 10:15:44 EST 2016 re-calculating routing table
+Mon Feb 08 10:15:44 EST 2016 re-calculating routing table
+Mon Feb 08 10:15:44 EST 2016 re-calculating routing table
+Mon Feb 08 10:15:45 EST 2016 re-calculating routing table
+Mon Feb 08 10:16:46 EST 2016 switch 1 is down
+Mon Feb 08 10:16:46 EST 2016 re-calculating routing table
+Mon Feb 08 10:16:46 EST 2016 re-calculating routing table
+Mon Feb 08 10:16:46 EST 2016 re-calculating routing table
+Mon Feb 08 10:16:46 EST 2016 re-calculating routing table
+Mon Feb 08 10:17:32 EST 2016 get register request from switch 1
+Mon Feb 08 10:17:32 EST 2016 send response to switch 1
+Mon Feb 08 10:17:32 EST 2016 re-calculating routing table
+Mon Feb 08 10:17:32 EST 2016 re-calculating routing table
+Mon Feb 08 10:17:32 EST 2016 re-calculating routing table
+Mon Feb 08 10:17:32 EST 2016 re-calculating routing table
+Mon Feb 08 10:17:32 EST 2016 re-calculating routing table
+Mon Feb 08 10:17:33 EST 2016 re-calculating routing table
+Mon Feb 08 10:17:37 EST 2016 re-calculating routing table
+Mon Feb 08 10:17:42 EST 2016 re-calculating routing table
+Mon Feb 08 10:22:52 EST 2016 switch 1 is down
+Mon Feb 08 10:22:52 EST 2016 re-calculating routing table
+Mon Feb 08 10:22:52 EST 2016 re-calculating routing table
+Mon Feb 08 10:22:52 EST 2016 re-calculating routing table
+Mon Feb 08 10:23:04 EST 2016 get register request from switch 1
+Mon Feb 08 10:23:04 EST 2016 send response to switch 1
+Mon Feb 08 10:23:04 EST 2016 re-calculating routing table
+Mon Feb 08 10:23:04 EST 2016 re-calculating routing table
+Mon Feb 08 10:23:04 EST 2016 re-calculating routing table
+Mon Feb 08 10:23:04 EST 2016 re-calculating routing table
+Mon Feb 08 10:23:04 EST 2016 re-calculating routing table
+Mon Feb 08 10:23:05 EST 2016 re-calculating routing table
